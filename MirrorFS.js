@@ -558,7 +558,19 @@ class MirrorFS {
         debug('ERROR %s', message);
         _cleanupOnFail(filepathTemp, message, cb);
       } else {
-        fs.rename(filepathTemp, newFilePath, (err) => {
+		// Storj doesn't moves, so make polyfill with copy + delete
+		function rename(a, b, cb) {
+			fs.copyFile(a, b, err => {
+				if(err) cb(err);
+
+				fs.unlink(a, err => {
+					if(err) cb(err);
+
+				});
+			});
+		}
+
+        rename(filepathTemp, newFilePath, (err) => {
           if (err) {
             debug('ERROR: Failed to rename %s to %s', filepathTemp, newFilePath); // Shouldnt happen
             if (!wantStream) cb(err); // If wantStream then already called cb
